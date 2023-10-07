@@ -66,6 +66,19 @@ Stavka >> rok [
 ]
 
 { #category : #accessing }
-Stavka >> rok: anObject [
-	rok := anObject
+Stavka >> rok: datum [
+    "Ovo je setter metoda za 'rok'. Proverava da li je 'datum' validan datum pre nego što ga dodeli 'rok'."
+    datum ifNotNil: [
+        (datum isKindOf: Date) ifTrue: [
+            rok := datum. "Dodeli 'datum' promenljivoj 'rok' ako je validan datum."
+        ] ifFalse: [
+            "Obradi slučaj kada 'datum' nije validan datum."
+            rok := Date today + 7 days. "Postavi podrazumevani datum (npr. 7 dana od danas)."
+        ].
+    ] ifNil: [
+        "Obradi slučaj kada je 'datum' nil "
+        rok := Date today + 7 days. "Postavi podrazumevani datum (npr. 7 dana od danas)."
+    ].
+
+   
 ]

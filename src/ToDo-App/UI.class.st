@@ -1,70 +1,145 @@
 Class {
 	#name : #UI,
 	#superclass : #Object,
+	#instVars : [
+		'stavkeLista',
+		'addButton',
+		'deleteButton',
+		'stavkeListaMorph'
+	],
 	#category : #'ToDo-App'
 }
 
-{ #category : #accessing }
-UI >> captureUserInput [
-	| naslov opis prioritet datum jeZavrseno noviZadatak |
-	naslov := Transcript cr.
-	opis := Transcript cr.
-	Transcript show: 'Unesite prioritet zadatka (1-5): '.
-	prioritet := Transcript cr asNumber.
-	Transcript show: 'Unesite rok za zadatak (YYYY-MM-DD): '.
-	datum := Transcript cr asDate.
-	Transcript show: 'Da li je zadatka zavrsen (true/false): '.
-	jeZavrseno := Transcript cr asBoolean.
-	noviZadatak := Stavka new.
-	noviZadatak
-		naslov: naslov;
-		opis: opis;
-		prioritet: prioritet;
-		rok: datum;
-		jeZavrseno: jeZavrseno.
-	^ noviZadatak
+{ #category : #initialization }
+UI >> buildUI [
+    | window |
+    
+    "Kreiraj novi prozor."
+    window := SystemWindow new label: 'Task List'.
+    window model: self.
+
+    "Kreiraj listu zadataka za prikaz."
+    stavkeListaMorph  := PluggableListMorph new.
+     stavkeListaMorph
+        list: stavkeLista tasks;  
+        on: #displayStavku:on:;  
+        selection: nil;  
+        yourself.
+        
+    "Prikazi svaku stavku u listi koristeći displayStavku:on: metod."
+    stavkeLista tasks do: [:task |
+        self displayStavku: task on: stavkeListaMorph listMorph canvas.
+    ].
+
+    "Kreiraj dugme 'Dodaj Zadatak'."
+    addButton := SimpleButtonMorph new label: 'Add Task'.
+    addButton
+        actionSelector: #dodajStavkuUI;
+        target: self;
+        color: Color blue;  
+        position: stavkeListaMorph position + (0@stavkeListaMorph height + 10).
+
+    "Kreiraj dugme 'Obriši Odabrane'."
+    deleteButton := SimpleButtonMorph new label: 'Delete Selected'.
+    deleteButton
+        actionSelector: #obrisiOdabraneStavke;
+        target: self;
+        color: Color red;  
+        position: addButton position + (addButton width + 10 @ 0).
+
+    "Dodaj listu zadataka i dugmad u prozor."
+    window addMorph: stavkeListaMorph frame: (0@0 extent: 1@1).
+    window addMorph: addButton.
+    window addMorph: deleteButton.
+
+    
+    window openInWorld.
+
 ]
 
 { #category : #'as yet unclassified' }
-UI >> displayListuStavki: listaStavki [
-    Transcript clear.
-    listaStavki stavke do: [:each | self displayStavku: each].
+UI >> displayListuStavki [
+    | window listMorph |
+    
+    
+    window := SystemWindow new label: 'Lista zadataka'.
+    window model: self.
+
+    listMorph := PluggableListMorph new.
+    listMorph
+        list: stavkeLista  tasks;  "Pristupa listi stavki"
+        on: #displayStavku: ;  ""
+        selection: nil;  "Defaul selekcija."
+        yourself.
+
+    
+    window addMorph: listMorph frame: (0@0 extent: 1@1).
+
+   
+    window openInWorld.
 ]
 
 { #category : #accessing }
-UI >> displayStavku: stavka [
-	Transcript
-		show: 'Naslov: ' , stavka naslov;
-		cr.
-	Transcript
-		show: 'Opis ' , stavka opis;
-		cr.
-	Transcript
-		show: 'Prioritet ' , stavka prioritet asString;
-		cr.
-	Transcript
-		show: 'Rok: ' , stavka rok asString;
-		cr.
-	Transcript
-		show: 'Zavrseno ' , stavka jeZavrseno asString;
-		cr
+UI >> displayStavku: stavka on: aCanvas [
+    "Metod koji prikazuje svaku stavku iz liste sa svojim poljima."
+    | xOffset yOffset lineHeight |
+    xOffset := 10.
+    yOffset := 0.
+    lineHeight := 20.
+    
+    aCanvas
+        frame: (0@0 extent: 1@lineHeight);
+        text: 'Naslov: ', stavka naslov;
+        textColor: Color black.
+    yOffset := yOffset + lineHeight.
+
+    aCanvas
+        frame: (0@yOffset extent: 1@lineHeight);
+        text: 'Opis: ', stavka opis;
+        textColor: Color black.
+    yOffset := yOffset + lineHeight.
+
+    aCanvas
+        frame: (0@yOffset extent: 1@lineHeight);
+        text: 'Prioritet: ', stavka prioritet;
+        textColor: Color black.
+    yOffset := yOffset + lineHeight.
+
+    aCanvas
+        frame: (0@yOffset extent: 1@lineHeight);
+        text: 'Rok: ', stavka rok greaseString;
+        textColor: Color black.
+    yOffset := yOffset + lineHeight.
+
+    aCanvas
+        frame: (0@yOffset extent: 1@lineHeight);
+        text: 'Završeno: ', (stavka jeZavrseno ifTrue: ['Da'] ifFalse: ['Ne']);
+        textColor: Color black.
 ]
 
-{ #category : #accessing }
-UI >> getUserInput [
-    Transcript show: '1. Add new task' withCR.
-    Transcript show: '2. Mark task as complete' withCR.
-    Transcript show: '3. Exit' withCR.
-    ^ Transcript cr
+{ #category : #adding }
+UI >> dodajStavkuUI [
+    | novaStavka |
+    novaStavka := Stavka new. 
+    stavkeLista  add: novaStavka.
+    stavkeListaMorph  updateContents.
+
+
+]
+
+{ #category : #initialization }
+UI >> initialize [
+    "Inicijalizuj korisnički interfejs sa referencom na listu zadataka."
+    stavkeLista  := StavkeLista new.
+    self buildUI.
+
 ]
 
 { #category : #'as yet unclassified' }
-UI >> handleUserAction [
-    | userInput newToDoItem toDoList |
-    toDoList := StavkeLista  new.
-    [ userInput := self getUserInput.
-      userInput = '1' ] whileTrue: [
-        newToDoItem := self captureUserInput.
-        toDoList dodajStavku:  newToDoItem ].
-    self displayListuStavki:  toDoList.
+UI >> obrisiOdabraneStavke [
+    "Metoda za brisanje odabranih zadataka iz liste."
+    | odabraniZadaci |
+    odabraniZadaci := stavkeLista tasks select: [:zadatak | zadatak isSelected].
+    odabraniZadaci do: [:zadatak | stavkeLista remove: zadatak].
+    stavkeListaMorph updateContents.
 ]

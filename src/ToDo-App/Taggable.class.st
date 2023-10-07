@@ -8,7 +8,7 @@ Class {
 }
 
 { #category : #'as yet unclassified' }
-Taggable >> odajOznaku: oznaka [ [
+Taggable >> dodajOznaku: oznaka [ [
         oznake add: oznaka.
     ]
 ]
